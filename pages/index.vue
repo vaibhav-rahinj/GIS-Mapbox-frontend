@@ -1,4 +1,11 @@
 <template>
+  <head>
+    <link
+      rel="stylesheet"
+      href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.3.0/mapbox-gl-draw.css"
+      type="text/css"
+    />
+  </head>
   <div>
     <div>
       <!-- <div class="mapboxgl-ctrl-geocoder mapboxgl-ctrl">
@@ -35,6 +42,9 @@
         :options="data.options"
         @loaded="onMapLoaded"
       >
+        <div class="pre">
+          <pre id="info"></pre>
+        </div>
       </v-map>
     </main>
     <div id="map"></div>
@@ -45,17 +55,15 @@ import mapboxgl from "mapbox-gl";
 import VMap from "v-mapbox";
 import MapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
 import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
-// function upload() {
-//     console.log("hii");
-// }
+import MapboxDraw from "@mapbox/mapbox-gl-draw";
 
 const data = reactive({
   options: {
     accessToken:
       "pk.eyJ1IjoibWF5dXJ3YWtpa2FyIiwiYSI6ImNsNmdjdGxwbjBiNGMzY282bWh0dng2c2kifQ.y-m4-zQKOeOOnDG5I1u6ng",
     style: "mapbox://styles/mapbox/outdoors-v11",
-    center: [-68.137343, 45.137451],
-    zoom: 8,
+    center: [74.137343, 19.137451],
+    zoom: 12,
     maxZoom: 22,
     crossSourceCollisions: false,
     failIfMajorPerformanceCaveat: false,
@@ -68,7 +76,23 @@ const data = reactive({
   } as mapboxgl.MapboxOptions,
   map: {} as mapboxgl.Map,
 });
+
+let allStud = reactive({
+  mapData: [],
+});
+allStud.mapData = await $fetch("http://localhost:4000/mapdata/");
+console.log(allStud.mapData);
 async function onMapLoaded(map) {
+  //   Marker Starts
+  allStud.mapData.map((ele) => {
+    new mapboxgl.Marker({
+      draggable: true,
+      color: "#" + (Math.random().toString(16) + "000000").substring(2, 8),
+    })
+      .setLngLat([ele.lat, ele.lon])
+      .addTo(map);
+  });
+  // Marker Ends
   data.map = map;
   mapboxgl.accessToken =
     "pk.eyJ1Ijoic29jaWFsZXhwbG9yZXIiLCJhIjoiREFQbXBISSJ9.dwFTwfSaWsHvktHrRtpydQ";
@@ -76,9 +100,15 @@ async function onMapLoaded(map) {
     accessToken: mapboxgl.accessToken,
     mapboxgl: mapboxgl,
   });
-  data.map.addControl(geocoder);
+  map.addControl(geocoder);
   // console.log('on map laoded: ', map);
-  data.map.addSource("pune", {
+  let pointsData1 = [];
+  allStud.mapData.map((ele) => {
+    let arrFormat = [ele.lat, ele.lon];
+    pointsData1.push(arrFormat);
+  });
+  console.log(pointsData1);
+  map.addSource("pune", {
     type: "geojson",
     data: {
       type: "Feature",
@@ -86,16 +116,70 @@ async function onMapLoaded(map) {
         type: "Polygon",
         coordinates: [
           [
-            [73.68942260742188, 18.530398219358684],
-            [73.65509033203125, 18.340187242207897],
-            [73.99154663085938, 18.359739156553683],
-            [73.99429321289062, 18.641040231399984],
-            [73.68942260742188, 18.530398219358684],
+            pointsData1,
+
+            // [73.68942260742188, 18.530398219358684],
+            // [73.65509033203125, 18.340187242207897],
+            // [73.99154663085938, 18.359739156553683],
+            // [73.99429321289062, 18.641040231399984],
+            // [73.68942260742188, 18.530398219358684],
           ],
         ],
       },
     },
   });
+  map.addLayer({
+    id: "pune",
+    type: "line",
+    source: "pune", // reference the data source
+    layout: {
+      "line-join": "round",
+      "line-cap": "round",
+    },
+    paint: {
+      "line-color": "green", //blue color fill
+      "line-width": 1,
+      "line-opacity": 1,
+    },
+  });
+
+  map.addSource("vaijapur", {
+    type: "geojson",
+    data: {
+      type: "Feature",
+      properties: {},
+      geometry: {
+        type: "LineString",
+        coordinates: [
+          // [
+          [73.68942260742188, 18.530398219358684],
+          [73.65509033203125, 18.340187242207897],
+          [73.99154663085938, 18.359739156553683],
+          [73.99429321289062, 18.641040231399984],
+          [73.68942260742188, 18.530398219358684],
+          // ],
+        ],
+      },
+    },
+  });
+
+  const layer: mapboxgl.AnyLayer = {
+    id: "pune",
+    type: "line",
+    source: "vaijapur",
+    layout: {
+      "line-join": "round",
+      "line-cap": "round",
+    },
+    paint: {
+      "line-color": "green", //blue color fill
+      "line-width": 1,
+      "line-opacity": 1,
+    },
+  };
+
+  // Add a new layer to add linestring
+  data.map.addLayer(layer);
   const setStyle: any = document.getElementById("layer-change");
   setStyle.addEventListener("change", (event) => {
     console.log(event);
@@ -111,6 +195,17 @@ async function onMapLoaded(map) {
       "fill-color": "black", // blue color fill
       "fill-opacity": 0.5,
     },
+  });
+
+  //Draw tool
+  var Draw = new MapboxDraw();
+  map.addControl(Draw, "top-right");
+  //Draw tool end
+
+  //show lat long when mouse move
+  map.on("mousemove", (e) => {
+    document.getElementById("info").innerHTML =
+      JSON.stringify(e.point) + "<br />" + JSON.stringify(e.lngLat.wrap());
   });
 }
 </script>
@@ -156,5 +251,14 @@ body {
 }
 .w-full {
   width: 100%;
+}
+.pre {
+  z-index: 1;
+  top: 0px;
+  left: 600px;
+  position: relative;
+  width: 30%;
+  height: 9%;
+  background-color: white;
 }
 </style>

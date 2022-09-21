@@ -5,4 +5,9 @@
 export default defineNuxtConfig({
   ssr: false,
     css: ["mapbox-gl/dist/mapbox-gl.css", "v-mapbox/dist/v-mapbox.css"],
+    build: {
+      postcss: {
+        postcssOptions: require('./postcss.config.js'),
+      },
+    }
 });
