@@ -82,6 +82,7 @@ let allStud = reactive({
 });
 allStud.mapData = await $fetch("http://localhost:4000/mapdata/");
 console.log(allStud.mapData);
+
 async function onMapLoaded(map) {
   //   Marker Starts
   allStud.mapData.map((ele) => {
@@ -100,6 +101,20 @@ async function onMapLoaded(map) {
     accessToken: mapboxgl.accessToken,
     mapboxgl: mapboxgl,
   });
+  map.flyTo({
+    center: [73.8743, 19.2032],
+    zoom: 9,
+    speed: 0.4,
+    curve: 1,
+    easing(t) {
+      const marker1 = new mapboxgl.Marker({
+        color: "#FF0000",
+        draggable: true,
+      }).setLngLat([73.8743, 19.2032]);
+      marker1.addTo(map);
+      return t;
+    },
+  });
   map.addControl(geocoder);
   // console.log('on map laoded: ', map);
   let pointsData1 = [];
@@ -114,32 +129,18 @@ async function onMapLoaded(map) {
       type: "Feature",
       geometry: {
         type: "Polygon",
-        coordinates: [
-          [
-            pointsData1,
-
-            // [73.68942260742188, 18.530398219358684],
-            // [73.65509033203125, 18.340187242207897],
-            // [73.99154663085938, 18.359739156553683],
-            // [73.99429321289062, 18.641040231399984],
-            // [73.68942260742188, 18.530398219358684],
-          ],
-        ],
+        coordinates: [pointsData1],
       },
     },
   });
   map.addLayer({
     id: "pune",
-    type: "line",
+    type: "fill",
     source: "pune", // reference the data source
-    layout: {
-      "line-join": "round",
-      "line-cap": "round",
-    },
+    layout: {},
     paint: {
-      "line-color": "green", //blue color fill
-      "line-width": 1,
-      "line-opacity": 1,
+      "fill-color": "black", // blue color fill
+      "fill-opacity": 0.5,
     },
   });
 
